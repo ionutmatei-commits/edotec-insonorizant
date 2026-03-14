@@ -19,6 +19,12 @@
   --green:#27ae60;--blue:#2980b9;--purple:#8e44ad}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#fff;color:var(--text);
   min-height:100vh;overflow-x:hidden}
+.theme-toggle{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1.5px solid var(--border);
+  border-radius:12px;cursor:pointer;font-size:12px;font-weight:700;background:#fff;color:var(--text);
+  transition:border-color .2s,background .2s,color .2s;min-height:36px}
+.theme-toggle:hover{border-color:var(--red)}
+.theme-toggle-ic{font-size:14px;line-height:1}
+.theme-toggle-lbl{white-space:nowrap}
 
 /* ── HEADER ── */
 header{background:#fff;border-bottom:1.5px solid var(--border);padding:0 16px;height:52px;
@@ -780,6 +786,82 @@ select:not(:disabled):hover{border-color:#bfc5ce}
 .mode-guide-card-title{font-size:13px;font-weight:800;color:#201a17;margin-top:10px}
 .mode-guide-card-copy{font-size:11px;line-height:1.45;color:#74685f;margin-top:5px}
 .mode-guide-mini{font-size:10px;font-weight:800;color:#c73b2f;text-transform:uppercase;letter-spacing:.6px;margin-top:8px}
+
+body[data-theme="dark"]{background:#111317;color:#f3eee9}
+body[data-theme="dark"] header,
+body[data-theme="dark"] .block,
+body[data-theme="dark"] .car-block,
+body[data-theme="dark"] .zones-block,
+body[data-theme="dark"] .legend-block,
+body[data-theme="dark"] .cart-modal,
+body[data-theme="dark"] .checkout-modal,
+body[data-theme="dark"] .zone-modal,
+body[data-theme="dark"] .confirm-card,
+body[data-theme="dark"] .mode-guide,
+body[data-theme="dark"] .car-summary-bar{
+  background:#1a1e24!important;
+  color:#f3eee9!important;
+  border-color:#333b46!important;
+  box-shadow:0 18px 42px rgba(0,0,0,.35)!important
+}
+body[data-theme="dark"] .mode-guide-card,
+body[data-theme="dark"] .desktop-step,
+body[data-theme="dark"] .pkg-btn,
+body[data-theme="dark"] .layer-card,
+body[data-theme="dark"] .mat-card,
+body[data-theme="dark"] .trunk-sub-card,
+body[data-theme="dark"] .lbtn,
+body[data-theme="dark"] .cart-btn,
+body[data-theme="dark"] .theme-toggle,
+body[data-theme="dark"] select,
+body[data-theme="dark"] .prop-btn,
+body[data-theme="dark"] .btn-checkout{
+  background:#232830!important;
+  color:#f3eee9!important;
+  border-color:#3b4552!important
+}
+body[data-theme="dark"] .mode-guide-card.is-active,
+body[data-theme="dark"] .pkg-btn-full,
+body[data-theme="dark"] .pkg-btn-popular,
+body[data-theme="dark"] .prop-btn.active{
+  background:linear-gradient(180deg,#3a2322 0%,#24191b 100%)!important;
+  border-color:#c95c52!important;
+  color:#fff2ef!important
+}
+body[data-theme="dark"] .logo-brand,
+body[data-theme="dark"] .logo-sub-line,
+body[data-theme="dark"] .block-title,
+body[data-theme="dark"] .fl,
+body[data-theme="dark"] .csb-name,
+body[data-theme="dark"] .cart-item-nm,
+body[data-theme="dark"] .mode-guide-title,
+body[data-theme="dark"] .mode-guide-card-title,
+body[data-theme="dark"] .zm-step,
+body[data-theme="dark"] .zm-title{
+  color:#f3eee9!important
+}
+body[data-theme="dark"] .bc-chip,
+body[data-theme="dark"] .zd-lbl{
+  background:#232830!important;
+  color:#f3eee9!important;
+  border-color:#4a5563!important
+}
+body[data-theme="dark"] .cart-item-det,
+body[data-theme="dark"] .mode-guide-copy,
+body[data-theme="dark"] .mode-guide-card-copy,
+body[data-theme="dark"] .pkg-btn-sub,
+body[data-theme="dark"] .csb-detail,
+body[data-theme="dark"] .empty-zones,
+body[data-theme="dark"] .fl{
+  color:#b6bec8!important
+}
+body[data-theme="dark"] .car-hero-img{
+  box-shadow:0 12px 36px rgba(0,0,0,.45)
+}
+body[data-theme="dark"] #tooltip{
+  background:#0c0f13;
+  color:#fff
+}
 .mobile-offer-actions{display:none}
 .car-photo-container.mobile-blur img{filter:blur(7px) saturate(.8) brightness(.82);transform:scale(1.015);transition:filter .22s ease,transform .22s ease}
 .car-photo-container.mobile-blur .zone-pin{opacity:.38;pointer-events:none}
@@ -911,6 +993,10 @@ body.desktop-flow .desktop-step.is-info .desktop-step-nr{background:#eaded1;colo
     </div>
   </div>
   <div class="hdr-right">
+    <button class="theme-toggle" id="theme-toggle" type="button" onclick="toggleTheme()">
+      <span class="theme-toggle-ic" id="theme-toggle-ic">🌙</span>
+      <span class="theme-toggle-lbl" id="theme-toggle-lbl">Temă închisă</span>
+    </button>
     <button class="cart-btn" onclick="openCart()">
       <svg class="cart-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Coș <span class="cart-n" id="cart-n">0</span>
     </button>
@@ -5591,6 +5677,32 @@ function addFullPackageToCart(quality, includeLabor){
     :`✓ Pachet ${qName} (materiale) adăugat în coș!`;
   showToast(msg);
 }
+
+function applyTheme(theme){
+  const nextTheme=theme==='dark'?'dark':'light';
+  document.body.setAttribute('data-theme',nextTheme);
+  const ic=document.getElementById('theme-toggle-ic');
+  const lbl=document.getElementById('theme-toggle-lbl');
+  if(ic)ic.textContent=nextTheme==='dark'?'☀️':'🌙';
+  if(lbl)lbl.textContent=nextTheme==='dark'?'Temă deschisă':'Temă închisă';
+}
+
+function toggleTheme(){
+  const current=document.body.getAttribute('data-theme')==='dark'?'dark':'light';
+  const next=current==='dark'?'light':'dark';
+  applyTheme(next);
+  try{localStorage.setItem('edotecTheme',next);}catch(err){}
+}
+
+function initTheme(){
+  let saved='light';
+  try{
+    saved=localStorage.getItem('edotecTheme')||'light';
+  }catch(err){}
+  applyTheme(saved);
+}
+
+initTheme();
 </script>
 </body>
 </html>
