@@ -116,6 +116,7 @@ select:disabled{opacity:.35;cursor:not-allowed}
 
 /* ── CONFIGURED ZONES SUMMARY ── */
 .zones-block{background:var(--gray);padding:14px 16px}
+#zones-summary{padding-left:20px}
 .zone-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
   background:#eaf7ef;border:1.5px solid var(--green);border-radius:20px;
   font-size:11px;font-weight:600;color:var(--green);margin:3px}
@@ -662,6 +663,18 @@ header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;ba
 @keyframes eyebrowPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.7)}}
 @keyframes guideGlow{0%,100%{box-shadow:0 0 0 2px rgba(214,48,49,.15),0 0 0 0px rgba(214,48,49,.0)}50%{box-shadow:0 0 0 3px rgba(214,48,49,.35),0 0 12px 4px rgba(214,48,49,.18)}}
 .guide-pulse{animation:guideGlow 1.4s ease-in-out infinite;border-color:#d63031!important;border-radius:10px!important}
+@keyframes versionPromptPulse{0%,100%{box-shadow:0 0 0 0 rgba(214,48,49,.22)}50%{box-shadow:0 0 0 10px rgba(214,48,49,0)}}
+.version-prompt{display:none;margin-bottom:10px;padding:12px 14px;border-radius:16px;border:1.5px solid rgba(214,48,49,.24);
+  background:linear-gradient(180deg,#fff4f2 0%,#fffaf8 100%);color:#4a2a26;animation:versionPromptPulse 1.5s ease-in-out infinite}
+.version-prompt.show{display:block}
+.version-prompt-title{font-size:12px;font-weight:900;color:var(--red);letter-spacing:.2px}
+.version-prompt-copy{font-size:12px;line-height:1.5;margin-top:5px}
+.body-type-btns-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+body[data-theme="dark"] .version-prompt{
+  background:linear-gradient(180deg,#312022 0%,#23191b 100%);
+  border-color:#6a3433;
+  color:#f6dfdb
+}
 .hero-eyebrow-text{font-size:9.5px;font-weight:800;color:var(--red);
   letter-spacing:.7px;text-transform:uppercase}
 .hero-title{font-size:22px;font-weight:900;color:var(--dark);
@@ -1088,7 +1101,11 @@ body.desktop-flow .desktop-step.is-info .desktop-step-nr{background:#eaded1;colo
         </div>
         <div class="fg sel-brand-wrap" id="body-type-row" style="display:none">
           <label class="fl">Forma caroseriei</label>
-          <div id="body-type-btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
+          <div class="version-prompt" id="version-prompt">
+            <div class="version-prompt-title">Trebuie să ne spui și ce fel de versiune este.</div>
+            <div class="version-prompt-copy">Alege varianta corectă a caroseriei, iar configuratorul continuă automat.</div>
+          </div>
+          <div id="body-type-btns" class="body-type-btns-wrap"></div>
         </div>
       </div>
       <div class="desktop-step-cta">
@@ -1650,6 +1667,15 @@ async function fetchBNR(){
   }catch(e){console.log('BNR fallback 5.10');}
 }
 function ron(eur){return Math.round(eur*EUR_TO_RON);}
+const CURRENT_MODEL_YEAR=new Date().getFullYear();
+
+function getSelectableEndYear(entry){
+  const endYear=Array.isArray(entry)?Number(entry[2]||0):0;
+  if(!endYear) return CURRENT_MODEL_YEAR;
+  // Modelele marcate local ca fiind inca actuale sunt extinse pana la anul curent.
+  if(endYear>=CURRENT_MODEL_YEAR-2) return CURRENT_MODEL_YEAR;
+  return endYear;
+}
 
 // ════════════════════════════════════════
 // CAR DATABASE [bodyClass, startYear, endYear]
@@ -1876,6 +1902,66 @@ const carDB = {
 "NIO":{"EL6":["suv_medium",2022,2024],"EL7":["suv_large",2021,2024],"ET5":["sedan",2022,2024],"ET7":["large_sedan",2021,2024]},
 "XPENG":{"G6":["suv_medium",2023,2024],"G9":["suv_large",2022,2024],"P5":["sedan",2021,2024],"P7":["large_sedan",2020,2024]}
 };
+
+// Research pass martie 2026:
+// - mărci premium / EV premium: prag >20.000 EUR depășit pe modelele de intrare
+// - excepțiile de mai jos sunt modelele low-cost confirmate sub sau în jurul pragului
+const ALWAYS_OVER_20K_BRANDS=new Set([
+  "Audi","BMW","Mercedes-Benz","Porsche","Jaguar","Land Rover","Lexus","Maserati",
+  "Genesis","Infiniti","Tesla","NIO","XPENG","BYD","Volvo","Alfa Romeo","Abarth",
+  "Alpine","DS Automobiles","CUPRA","Jeep"
+]);
+const UNDER_20K_NEW_MODELS={
+  "Dacia":["Logan","Sandero","Sandero Stepway","Spring","Jogger","Duster","Dokker","Logan MCV"],
+  "Citroën":["C1","C3"],
+  "Fiat":["500","Panda","Grande Punto"],
+  "Ford":["Fiesta"],
+  "Hyundai":["i10","i20"],
+  "Kia":["Picanto"],
+  "Nissan":["Micra"],
+  "Opel":["Corsa"],
+  "Peugeot":["108","208"],
+  "Renault":["Clio","Twingo"],
+  "Seat":["Ibiza","Mii"],
+  "Škoda":["Citigo","Fabia","Rapid"],
+  "Skoda":["Citigo","Fabia","Rapid"],
+  "Suzuki":["Swift"],
+  "Toyota":["Aygo","Aygo X"],
+  "Volkswagen":["up!"],
+  "MG":["3","ZS"],
+  "Chevrolet":["Aveo","Spark"],
+  "Lancia":["Ypsilon"]
+};
+
+function isUnder20kNewModel(brand,model){
+  return !!(UNDER_20K_NEW_MODELS[brand]&&UNDER_20K_NEW_MODELS[brand].includes(model));
+}
+function isCatalogOver20kWhenNew(brand,model,year){
+  if(!brand||!model) return false;
+  if(isUnder20kNewModel(brand,model)) return false;
+  if(ALWAYS_OVER_20K_BRANDS.has(brand)) return true;
+  const yr=Number(year||0);
+  // Pentru modele actuale / aproape actuale, dacă nu sunt pe lista low-cost,
+  // le tratăm ca >20.000 EUR la valoarea de nouă.
+  if(yr>=CURRENT_MODEL_YEAR-1) return true;
+  // Pentru segmentele mari și SUV-urile medii/mari păstrăm majorarea și pe ani anteriori.
+  return ["large_sedan","suv_medium","suv_large","van_large"].includes(bodyClass);
+}
+function getLaborAgeAdjustmentMeta(){
+  const yr=parseInt(selYear)||CURRENT_MODEL_YEAR;
+  const age=CURRENT_MODEL_YEAR-yr;
+  let mult=1.0;
+  if(isCatalogOver20kWhenNew(selBrand,selModel,yr)){
+    if(age<=1) mult=1.30;
+    else if(age<=2) mult=1.20;
+  }
+  let publicLabel='Ajustare standard';
+  if(mult>=1.30) publicLabel='Ajustare 3';
+  else if(mult>=1.20) publicLabel='Ajustare 2';
+  else if(mult>=1.10) publicLabel='Ajustare 1';
+  const pctLabel=mult>1?`+${Math.round((mult-1)*100)}%`:"standard";
+  return {age,mult,pctLabel,publicLabel};
+}
 
 // Body class info
 const bodyInfo={
@@ -2335,6 +2421,7 @@ function getLaborCost(){
 
 // ════════════ STATE ════════════
 let selBrand="",selModel="",selYear="",bodyClass="sedan",propulsion="ice";
+let versionSelectionRequired=false,versionConfirmed=false;
 let currentVariantType=null; // null | "coupe" | "cabrio"
 
 // Modele exclusiv electrice — selectia lor bifează automat EV
@@ -2513,7 +2600,7 @@ function resetCartForNewVehicle(){
 
 function canAdvanceToStep(step){
   if(step<=1) return true;
-  if(step===2) return !!(selBrand&&selModel&&selYear&&propulsion&&bodyClass!=='blocked');
+  if(step===2) return !!(selBrand&&selModel&&selYear&&propulsion&&bodyClass!=='blocked'&&(!versionSelectionRequired||versionConfirmed));
   if(step===3) return false;
   return false;
 }
@@ -2810,10 +2897,19 @@ function showTip(e,text){
 
 // ════════════ GUIDE PULSE ════════════
 function setGuide(id){
-  ['sel-brand','sel-model','sel-year'].forEach(sid=>{
+  ['sel-brand','sel-model','sel-year','body-type-btns'].forEach(sid=>{
     document.getElementById(sid)?.classList.remove('guide-pulse');
   });
   if(id) document.getElementById(id)?.classList.add('guide-pulse');
+}
+
+function updateVersionPrompt(){
+  const row=document.getElementById('body-type-row');
+  const prompt=document.getElementById('version-prompt');
+  if(!row||!prompt) return;
+  const needsPrompt=versionSelectionRequired&&!versionConfirmed&&row.style.display!=='none';
+  prompt.classList.toggle('show',needsPrompt);
+  if(needsPrompt) setGuide('body-type-btns');
 }
 // La init, pulseaza Marca
 setTimeout(()=>setGuide('sel-brand'),200);
@@ -2823,11 +2919,14 @@ function onBrand(){
   const prevVehicleKey=getCurrentVehicleKey();
   selBrand=document.getElementById("sel-brand").value;
   selModel="";selYear="";
+  versionSelectionRequired=false;versionConfirmed=false;
   const sm=document.getElementById("sel-model");
   sm.innerHTML='<option value="">— model —</option>';sm.disabled=!selBrand;
   document.getElementById("sel-year").innerHTML='<option value="">— an —</option>';
   document.getElementById("sel-year").disabled=true;
+  document.getElementById("body-type-row").style.display='none';
   setGuide(selBrand?'sel-model':null);
+  updateVersionPrompt();
   expandCarForm();
   if(selBrand) Object.keys(carDB[selBrand]).sort().forEach(m=>{const o=document.createElement("option");o.value=m;o.textContent=m;sm.appendChild(o);});
   applyPinDisabledState();
@@ -2837,15 +2936,19 @@ function onModel(){
   const prevVehicleKey=getCurrentVehicleKey();
   selModel=document.getElementById("sel-model").value;
   selYear="";
+  versionSelectionRequired=false;versionConfirmed=false;
   const sy=document.getElementById("sel-year");
   sy.innerHTML='<option value="">— an —</option>';sy.disabled=!selModel;
   if(selBrand&&selModel){
     const d=carDB[selBrand][selModel];
-    for(let y=d[2];y>=d[1];y--){const o=document.createElement("option");o.value=y;o.textContent=y;sy.appendChild(o);}
+    const endYear=getSelectableEndYear(d);
+    for(let y=endYear;y>=d[1];y--){const o=document.createElement("option");o.value=y;o.textContent=y;sy.appendChild(o);}
     const evModels=EV_ONLY_MODELS[selBrand]||[];
     if(evModels.includes(selModel)) setProp('ev');
   }
+  document.getElementById("body-type-row").style.display='none';
   setGuide(selModel?'sel-year':null);
+  updateVersionPrompt();
   applyPinDisabledState();
   maybeHandleVehicleSwitch(prevVehicleKey);
 }
@@ -2865,11 +2968,22 @@ function onYear(){
   if(selYear&&selBrand&&selModel){
     bodyClass=carDB[selBrand][selModel][0];
     renderBodyTypeSelector(bodyClass);
-    setGuide(null); // oprim pulsul dupa an selectat
     // Daca modelul are variante specifice (E-Class, C-Class etc), asteapta selectia variantei
-    const hasSpecificVariants=carVariants[selBrand]&&carVariants[selBrand][selModel];
-    if(propulsion&&!hasSpecificVariants) collapseCarForm();
+    const hasSpecificVariants=!!getSpecificVariantsForCurrentModel();
+    const needsVersion=hasSpecificVariants;
+    if(needsVersion){
+      versionSelectionRequired=true;
+      versionConfirmed=false;
+      updateVersionPrompt();
+    } else {
+      versionSelectionRequired=false;
+      versionConfirmed=true;
+      setGuide(null);
+      updateVersionPrompt();
+      if(propulsion) collapseCarForm();
+    }
   }
+  applyPinDisabledState();
   maybeHandleVehicleSwitch(prevVehicleKey);
 }
 
@@ -2881,6 +2995,12 @@ const bodyTypeVariants=[
   {id:"sedan",       label:"Sedan / Berlină", icon:"🚙"},
   {id:"large_sedan", label:"Break / Combi",   icon:"🚗", alt:"break"},
 ];
+
+function getSpecificVariantsForCurrentModel(){
+  if(carVariants[selBrand]&&carVariants[selBrand][selModel]) return carVariants[selBrand][selModel];
+  if(selBrand==="Škoda"&&carVariants["Skoda"]&&carVariants["Skoda"][selModel]) return carVariants["Skoda"][selModel];
+  return null;
+}
 
 // Variante specifice per brand/model (afisate in loc de selector generic)
 // bodyClass: clasa folosita pentru calcul arii
@@ -3024,46 +3144,37 @@ function renderBodyTypeSelector(defaultBodyClass){
   const btns=document.getElementById('body-type-btns');
   if(!row||!btns) return;
   // Verifica daca modelul are variante specifice definite
-  const specificVariants=carVariants[selBrand]&&carVariants[selBrand][selModel];
+  const specificVariants=getSpecificVariantsForCurrentModel();
   if(specificVariants){
     // Variante specifice per model (C-Class: Limuzina/Coupe/Cabrio/Break)
+    currentVariantType=null;
     btns.innerHTML=specificVariants.map((o,i)=>{
       const key='sv'+i;
-      const isActive=i===0;
-      if(isActive){bodyClass=o.bodyClass;currentVariantType=o.variantType||null;applyVariantZones();}
       const vt=o.variantType||'null';
       return `<button onclick="setBodyType('${o.bodyClass}','${key}','${vt==='null'?'':o.variantType||''}')" id="btype-${key}"
-        style="padding:6px 12px;border:1.5px solid ${isActive?'var(--red)':'var(--border)'};
-        border-radius:20px;background:${isActive?'#fff0ee':'#fff'};
+        style="padding:6px 12px;border:1.5px solid var(--border);
+        border-radius:20px;background:#fff;
         font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
         ${o.icon} ${o.label}
       </button>`;
     }).join('');
     row.style.display='block';
+    versionSelectionRequired=true;
+    versionConfirmed=false;
+    updateVersionPrompt();
     return;
   }
-  // Fallback: selector generic doar pentru hatchback/sedan
-  if(!FLEXIBLE_BODY_CLASSES.includes(defaultBodyClass)){
-    row.style.display='none';
-    return;
-  }
-  btns.innerHTML=bodyTypeVariants.map(o=>{
-    const key=o.alt||o.id;
-    const isActive=o.id===defaultBodyClass&&!o.alt;
-    return `<button onclick="setBodyType('${o.id}','${key}')" id="btype-${key}"
-      style="padding:6px 12px;border:1.5px solid ${isActive?'var(--red)':'var(--border)'};
-      border-radius:20px;background:${isActive?'#fff0ee':'#fff'};
-      font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
-      ${o.icon} ${o.label}
-    </button>`;
-  }).join('');
-  row.style.display='block';
+  row.style.display='none';
+  versionSelectionRequired=false;
+  versionConfirmed=true;
+  updateVersionPrompt();
 }
 
 function setBodyType(newBodyClass, key, variantType){
   const prevVehicleKey=getCurrentVehicleKey();
   bodyClass=newBodyClass;
   currentVariantType=variantType||null;
+  versionConfirmed=true;
   applyVariantZones();
   // Update button styles
   document.querySelectorAll('#body-type-btns button').forEach(b=>{
@@ -3072,6 +3183,10 @@ function setBodyType(newBodyClass, key, variantType){
   });
   const btn=document.getElementById('btype-'+key);
   if(btn){btn.style.border='1.5px solid var(--red)';btn.style.background='#fff0ee';}
+  setGuide(null);
+  updateVersionPrompt();
+  refreshDesktopStepUI();
+  applyPinDisabledState();
   if(propulsion) collapseCarForm();
   maybeHandleVehicleSwitch(prevVehicleKey);
 }
@@ -3088,7 +3203,9 @@ function applyVariantZones(){
 
 function collapseCarForm(){
   if(!selBrand||!selModel||!selYear||!propulsion) return;
-  bodyClass=carDB[selBrand][selModel][0];
+  if(!versionSelectionRequired){
+    bodyClass=carDB[selBrand][selModel][0];
+  }
   // Reset zone visibility — se va aplica din nou daca userul schimba varianta
   applyVariantZones();
   // Verificare vehicul comercial blocat
@@ -3148,12 +3265,13 @@ function setProp(p){
   propulsion=p;
   // Activează pinii acum că avem propulsion
   applyPinDisabledState();
-  if(selBrand&&selModel&&selYear) collapseCarForm();
+  if(selBrand&&selModel&&selYear&&(!versionSelectionRequired||versionConfirmed)) collapseCarForm();
+  else if(selBrand&&selModel&&selYear&&versionSelectionRequired) updateVersionPrompt();
   showPromo();
 }
 
 function applyPinDisabledState(){
-  const carReady=!!(selBrand&&selModel&&selYear&&propulsion);
+  const carReady=!!(selBrand&&selModel&&selYear&&propulsion&&(!versionSelectionRequired||versionConfirmed));
   const disabled=!carReady;
   document.querySelectorAll('.zone-pin').forEach(pin=>{
     pin.classList.toggle('zpin-disabled', disabled);
@@ -4471,10 +4589,7 @@ function renderCheckoutStep1(){
 }
 
 function showMontajYes(){
-  const yr=parseInt(selYear)||2020;
-  const age=new Date().getFullYear()-yr;
-  const mult=1.0;
-  const pctLabel='standard';
+  const {age,mult,publicLabel}=getLaborAgeAdjustmentMeta();
   const baseLabor=getLaborCost(); // deja în RON
   const laborBeforeDiscount=Math.round(baseLabor*mult);
   const laborDiscount=applyLaborDiscount(laborBeforeDiscount);
@@ -4512,7 +4627,7 @@ function showMontajYes(){
   document.getElementById("checkout-content").innerHTML=`<div class="checkout-step">
     <div style="font-size:16px;font-weight:800;margin-bottom:10px">🔧 Manoperă estimativă</div>
     <div style="background:#fffbf5;border:1.5px solid #e67e22;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:11.5px">
-      Mașină <strong>${sizeName}</strong>, ~${age} an${age!==1?"i":""} vechime → ajustare <strong>${pctLabel}</strong>
+      Mașină <strong>${sizeName}</strong>, ~${age} an${age!==1?"i":""} vechime → <strong>${publicLabel}</strong>
     </div>
     ${breakdown?`<div style="background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-bottom:10px">${breakdown}</div>`:""}
     <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0">
@@ -5384,7 +5499,8 @@ function showFullPackage(targetId){
   const hasF=eligibleFullPkgZones.some(z=>z.zone==='arch_front');
   const hasR=eligibleFullPkgZones.some(z=>z.zone==='arch_rear');
   if(hasF&&hasR)laborTotal+=1200; else if(hasF)laborTotal+=700; else if(hasR)laborTotal+=700;
-  const laborDiscount=applyLaborDiscount(laborTotal);
+  const laborAgeMeta=getLaborAgeAdjustmentMeta();
+  const laborDiscount=applyLaborDiscount(Math.round(laborTotal*laborAgeMeta.mult));
 
   // State selectie
   window._pkgLabor=laborDiscount.discounted;
@@ -5464,7 +5580,7 @@ function showFullPackage(targetId){
       <div style="font-size:20px">🔧</div>
       <div style="flex:1">
         <div style="font-size:11px;font-weight:700;color:#e67e22">Estimare manoperă montaj</div>
-        <div style="font-size:10px;color:#888;margin-top:2px">Poți alege la pasul următor dacă vrei instalare profesională</div>
+        <div style="font-size:10px;color:#888;margin-top:2px">Poți alege la pasul următor dacă vrei instalare profesională · ${laborAgeMeta.publicLabel}</div>
       </div>
       <div style="font-size:16px;font-weight:900;color:#e67e22">~${laborDiscount.discounted} RON</div>
     </div>
@@ -5657,12 +5773,13 @@ function addFullPackageToCart(quality, includeLabor){
     const hasF=eligibleFullPkgZones.some(z=>z.zone==='arch_front');
     const hasR=eligibleFullPkgZones.some(z=>z.zone==='arch_rear');
     if(hasF&&hasR)laborTotal+=1200; else if(hasF)laborTotal+=700; else if(hasR)laborTotal+=700;
-    const laborDiscount=applyLaborDiscount(laborTotal);
+    const laborAgeMeta=getLaborAgeAdjustmentMeta();
+    const laborDiscount=applyLaborDiscount(Math.round(laborTotal*laborAgeMeta.mult));
     // Manopera e in RON; cartItems.total e in EUR → convertim inapoi in EUR-echivalent
     cartItems.push({
       zone:'extra',zoneName:'🔧 Manoperă estimativă — Pachet Complet',
       layers:0,quality:qName,car,area:0,total:laborDiscount.discounted/EUR_TO_RON,
-      lines:[`Estimare manoperă montaj toate zonele ~${laborDiscount.discounted} RON${laborDiscount.pct?` (discount -${laborDiscount.pct}%)`:''} — confirmare finală la instalator`],
+      lines:[`Estimare manoperă montaj toate zonele ~${laborDiscount.discounted} RON (${laborAgeMeta.publicLabel})${laborDiscount.pct?` (discount -${laborDiscount.pct}%)`:''} — confirmare finală la instalator`],
       id:Date.now()+Math.random(),carLabel,bodyClassName:bi.name,bodyIcon:bi.icon,
       variantLabel:getCurrentVehicleVariantLabel(),propulsion,vehicleKey:getCurrentVehicleKey(),
       isLaborPkg:true
