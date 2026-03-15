@@ -19,12 +19,11 @@
   --green:#27ae60;--blue:#2980b9;--purple:#8e44ad}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#fff;color:var(--text);
   min-height:100vh;overflow-x:hidden}
-.theme-toggle{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1.5px solid var(--border);
-  border-radius:12px;cursor:pointer;font-size:12px;font-weight:700;background:#fff;color:var(--text);
-  transition:border-color .2s,background .2s,color .2s;min-height:36px}
+.theme-toggle{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:1.5px solid var(--border);
+  border-radius:12px;cursor:pointer;background:#fff;color:var(--text);
+  transition:border-color .2s,background .2s,color .2s;flex-shrink:0}
 .theme-toggle:hover{border-color:var(--red)}
-.theme-toggle-ic{font-size:14px;line-height:1}
-.theme-toggle-lbl{white-space:nowrap}
+.theme-toggle-ic{font-size:18px;line-height:1}
 
 /* ── HEADER ── */
 header{background:#fff;border-bottom:1.5px solid var(--border);padding:0 16px;height:52px;
@@ -791,14 +790,20 @@ select:not(:disabled):hover{border-color:#bfc5ce}
 .mode-guide-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
 .mode-guide-title{font-size:14px;font-weight:900;color:#201a17}
 .mode-guide-copy{font-size:12px;line-height:1.5;color:#74685f;margin-top:4px;max-width:720px}
-.mode-guide-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.mode-guide-card{border:1px solid #e4d8ca;background:rgba(255,255,255,.86);border-radius:18px;padding:14px 14px 13px;text-align:left;cursor:pointer;transition:all .18s}
+.mode-guide-grid{display:grid;grid-template-columns:1.22fr .89fr .89fr;gap:10px}
+.mode-guide-card{border:1px solid #e4d8ca;background:rgba(255,255,255,.86);border-radius:18px;padding:12px 12px 11px;text-align:left;cursor:pointer;transition:all .18s}
 .mode-guide-card:hover{transform:translateY(-1px);border-color:#d8b2ab;box-shadow:0 10px 24px rgba(199,59,47,.08)}
-.mode-guide-card.is-active{border-color:#e7aa9d;background:#fff4f2;box-shadow:0 10px 26px rgba(199,59,47,.10)}
+.mode-guide-card.is-active{border-color:#d77e73;background:#f7dfda;
+  box-shadow:inset 0 0 0 1px rgba(199,59,47,.18),0 10px 26px rgba(199,59,47,.10)}
+.mode-guide-top{display:flex;align-items:center;gap:8px}
 .mode-guide-icon{font-size:22px;line-height:1}
-.mode-guide-card-title{font-size:13px;font-weight:800;color:#201a17;margin-top:10px}
-.mode-guide-card-copy{font-size:11px;line-height:1.45;color:#74685f;margin-top:5px}
-.mode-guide-mini{font-size:10px;font-weight:800;color:#c73b2f;text-transform:uppercase;letter-spacing:.6px;margin-top:8px}
+.mode-guide-card-title{font-size:13px;font-weight:800;color:#201a17}
+.mode-guide-card-copy{font-size:10.5px;line-height:1.38;color:#74685f;margin-top:4px}
+.mode-guide-mini{font-size:9.5px;font-weight:800;color:#c73b2f;text-transform:uppercase;letter-spacing:.55px;margin-top:6px}
+.mode-guide-arrow-hint{display:none;align-items:center;gap:5px;margin-top:6px;font-size:9.5px;font-weight:800;color:#c73b2f;text-transform:uppercase;letter-spacing:.55px}
+.mode-guide-arrow{font-size:14px;line-height:1;animation:modeGuideArrowPulse 1.2s ease-in-out infinite}
+.mode-guide-card.is-active .mode-guide-arrow-hint{display:inline-flex}
+@keyframes modeGuideArrowPulse{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
 
 body[data-theme="dark"]{background:#111317;color:#f3eee9}
 body[data-theme="dark"] header,
@@ -841,6 +846,7 @@ body[data-theme="dark"] .prop-btn.active{
   border-color:#c95c52!important;
   color:#fff2ef!important
 }
+body[data-theme="dark"] .mode-guide-card.is-active{background:#382628!important}
 body[data-theme="dark"] .logo-brand,
 body[data-theme="dark"] .logo-sub-line,
 body[data-theme="dark"] .block-title,
@@ -1008,7 +1014,6 @@ body.desktop-flow .desktop-step.is-info .desktop-step-nr{background:#eaded1;colo
   <div class="hdr-right">
     <button class="theme-toggle" id="theme-toggle" type="button" onclick="toggleTheme()">
       <span class="theme-toggle-ic" id="theme-toggle-ic">🌙</span>
-      <span class="theme-toggle-lbl" id="theme-toggle-lbl">Temă închisă</span>
     </button>
     <button class="cart-btn" onclick="openCart()">
       <svg class="cart-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Coș <span class="cart-n" id="cart-n">0</span>
@@ -1148,20 +1153,26 @@ body.desktop-flow .desktop-step.is-info .desktop-step-nr{background:#eaded1;colo
           </div>
           <div class="mode-guide-grid">
             <button class="mode-guide-card" id="mode-guide-manual" onclick="selectConfigMode('manual')">
-              <div class="mode-guide-icon">🎯</div>
-              <div class="mode-guide-card-title">Pe zone</div>
+              <div class="mode-guide-top">
+                <div class="mode-guide-icon">🎯</div>
+                <div class="mode-guide-card-title">Pe zone</div>
+              </div>
               <div class="mode-guide-card-copy">Apeși direct pe mașină și alegi separat fiecare suprafață.</div>
-              <div class="mode-guide-mini">Selectare detaliată</div>
+              <div class="mode-guide-arrow-hint"><span class="mode-guide-arrow">↓</span><span>Selectează mai jos zonele dorite</span></div>
             </button>
             <button class="mode-guide-card" id="mode-guide-popular" onclick="selectConfigMode('popular')">
-              <div class="mode-guide-icon">📦</div>
-              <div class="mode-guide-card-title">Pachete populare</div>
+              <div class="mode-guide-top">
+                <div class="mode-guide-icon">📦</div>
+                <div class="mode-guide-card-title">Pachete populare</div>
+              </div>
               <div class="mode-guide-card-copy">Combinații rapide, deja gândite pentru cele mai cerute scenarii.</div>
               <div class="mode-guide-mini">Varianta rapidă</div>
             </button>
             <button class="mode-guide-card" id="mode-guide-full" onclick="selectConfigMode('full')">
-              <div class="mode-guide-icon">🚗</div>
-              <div class="mode-guide-card-title">Insonorizare completă</div>
+              <div class="mode-guide-top">
+                <div class="mode-guide-icon">🚗</div>
+                <div class="mode-guide-card-title">Insonorizare completă</div>
+              </div>
               <div class="mode-guide-card-copy">Calculezi toată mașina dintr-un click, fără configurare manuală pe fiecare zonă.</div>
               <div class="mode-guide-mini">Toată mașina</div>
             </button>
@@ -5799,9 +5810,9 @@ function applyTheme(theme){
   const nextTheme=theme==='dark'?'dark':'light';
   document.body.setAttribute('data-theme',nextTheme);
   const ic=document.getElementById('theme-toggle-ic');
-  const lbl=document.getElementById('theme-toggle-lbl');
+  const btn=document.getElementById('theme-toggle');
   if(ic)ic.textContent=nextTheme==='dark'?'☀️':'🌙';
-  if(lbl)lbl.textContent=nextTheme==='dark'?'Temă deschisă':'Temă închisă';
+  if(btn)btn.setAttribute('aria-label',nextTheme==='dark'?'Temă deschisă':'Temă închisă');
 }
 
 function toggleTheme(){
